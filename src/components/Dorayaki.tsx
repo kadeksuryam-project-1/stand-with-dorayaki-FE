@@ -1,26 +1,27 @@
-import {useState} from 'react';
-import { makeStyles } from '@material-ui/core/styles';
+import * as React from 'react'
+import Button from '@material-ui/core/Button';
 import Card from '@material-ui/core/Card';
-import clsx from 'clsx';
 import CardActions from '@material-ui/core/CardActions';
 import CardContent from '@material-ui/core/CardContent';
 import CardMedia from '@material-ui/core/CardMedia';
 import CircularProgress from '@material-ui/core/CircularProgress';
 import Collapse from '@material-ui/core/Collapse';
-import Button from '@material-ui/core/Button';
-import IconButton from '@material-ui/core/IconButton';
-import Typography from '@material-ui/core/Typography';
-import TextField from '@material-ui/core/TextField';
 import Dialog from '@material-ui/core/Dialog';
 import DialogActions from '@material-ui/core/DialogActions';
 import DialogContent from '@material-ui/core/DialogContent';
 import DialogContentText from '@material-ui/core/DialogContentText';
 import DialogTitle from '@material-ui/core/DialogTitle';
+import IconButton from '@material-ui/core/IconButton';
+import { makeStyles } from '@material-ui/core/styles';
+import TextField from '@material-ui/core/TextField';
+import Typography from '@material-ui/core/Typography';
+import DeleteIcon from '@material-ui/icons/Delete';
 import EditIcon from '@material-ui/icons/Edit';
 import ExpandMoreIcon from '@material-ui/icons/ExpandMore';
-import DeleteIcon from '@material-ui/icons/Delete';
-import { API_BASE_URL } from '../config/config'
-import axios from 'axios'
+import axios from 'axios';
+import clsx from 'clsx';
+import { useState } from 'react';
+import { API_BASE_URL } from '../config/config';
 import { DorayakiEditDialogField, DorayakiProp } from '../types/Dorayaki';
 
 const useStyles = makeStyles((theme) => ({
@@ -59,7 +60,7 @@ const EditDialog = (prop: DorayakiProp) => {
     const handleEdit = async () => {
         setUpdateOps(true)
         try{
-            const updateURL = API_BASE_URL + `/dorayakis/${prop.dataDorayaki.id}`
+            const updateURL = API_BASE_URL + `/v1/dorayakis/${prop.dataDorayaki.id}`
             const {flavor, description, imageBlob} = editField
             let formData = new FormData()
             if(flavor) formData.append("flavor", flavor)
@@ -70,12 +71,13 @@ const EditDialog = (prop: DorayakiProp) => {
             await prop.syncDataDorayakis()
 
             prop.setNotif({...prop.notif, isOpen: true, type: "success", msg: "dorayaki successfully updated"})
-            setOpen(false)
+            handleClose()
         }catch(err){
+            let errMsg: string = "Error handleEdit"
             if(err instanceof Error) {
-                let errMsg: string = err.message.toString();
-                prop.setNotif({...prop.notif, isOpen: true, type: "error", msg: errMsg})
+                errMsg = err.message.toString();
             }
+            prop.setNotif({...prop.notif, isOpen: true, type: "error", msg: errMsg})
         }
         finally{
             setUpdateOps(false)
@@ -83,10 +85,9 @@ const EditDialog = (prop: DorayakiProp) => {
     }
 
     const checkEditFieldChanged = () => {
-        return !(
-            prop.dataDorayaki.flavor === editField.flavor &&
-            prop.dataDorayaki.description === editField.description &&
-            !(editField.image)
+        return (
+            prop.dataDorayaki.flavor !== "" &&
+            prop.dataDorayaki.description !== ""
         )
     }
 
@@ -172,19 +173,26 @@ const DeleteDialog = (prop: DorayakiProp) => {
 
     const handleDelete = async () => {
         setDeleteOps(true)
+        
         try{
-            const deleteURL = API_BASE_URL + `/dorayakis/${prop.dataDorayaki.id}`
+            const deleteURL = API_BASE_URL + `/v1/dorayakis/${prop.dataDorayaki.id}`
             await axios.delete(deleteURL)
+            handleClose()
             prop.setNotif({...prop.notif, isOpen: true, type: "success", msg: "dorayaki berhasil dihapus"})
-            setOpen(false)
-            await prop.syncDataDorayakis()
+            setTimeout(async () => {
+                await prop.syncDataDorayakis();
+            }, 500);
         }catch(err){
+            let errMsg: string = "Error handleDelete"
             if(err instanceof Error) {
-                let errMsg: string = err.message.toString();
-                prop.setNotif({...prop.notif, isOpen: true, type: "error", msg: errMsg})
+                errMsg = err.message.toString();
             }
+            prop.setNotif({...prop.notif, isOpen: true, type: "error", msg: errMsg})
+        } finally {
+            setDeleteOps(false)
         }
     }
+
     return (
         <div>
             <Button size="small" variant="contained" style={{backgroundColor: "#bf360c", color: 'inherit'}}
@@ -236,7 +244,7 @@ const Dorayaki = (prop: DorayakiProp) => {
             <div style={{height: "30vh"}}>
                 <CardMedia
                     className={classes.media}
-                    image={API_BASE_URL + prop.dataDorayaki.flavor}
+                    image={prop.dataDorayaki.image}
                     title={prop.dataDorayaki.flavor}
                 />
                 <CardContent>
@@ -265,8 +273,8 @@ const Dorayaki = (prop: DorayakiProp) => {
                 <CardContent>
                     <Typography><strong>Details</strong></Typography>
                     <br/>
-                    <Typography><strong>Flavor: </strong> <br/>{prop.dataDorayaki.flavor}</Typography>
-                    <Typography><strong>Description: </strong><br/>{prop.dataDorayaki.description}</Typography>
+                    <Typography><strong>Rasa: </strong> <br/>{prop.dataDorayaki.flavor}</Typography>
+                    <Typography><strong>Deskripsi: </strong><br/>{prop.dataDorayaki.description}</Typography>
                 </CardContent>
             </Collapse>
         </Card>

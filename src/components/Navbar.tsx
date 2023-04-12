@@ -1,7 +1,8 @@
-import { IconButton, Tooltip, AppBar, Toolbar, Typography, Button, makeStyles} from "@material-ui/core"
+import * as React from 'react'
+import { AppBar, Button, IconButton, Toolbar, Tooltip } from "@material-ui/core";
 import Brightness4Icon from '@material-ui/icons/Brightness4';
 import Brightness7Icon from '@material-ui/icons/Brightness7';
-import { Link } from 'react-router-dom'
+import { Link } from 'react-router-dom';
 import { NavbarcProp } from '../types/NavbarcProp';
 
 

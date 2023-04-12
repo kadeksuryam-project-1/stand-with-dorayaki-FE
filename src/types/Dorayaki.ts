@@ -17,3 +17,19 @@ export interface DorayakiProp extends NotificationProp {
 export interface DorayakiEditDialogField extends Dorayaki {
     imageBlob: File | null
 }
+
+export interface DorayakiPageAddDialogProp extends NotificationProp {
+    syncDataDorayakis: () => Promise<void>
+}
+
+
+export interface DorayakiPageAddDialogField {
+    flavor: string,
+    description: string,
+    imageBlob: File | null
+}
+
+export interface DorayakiPageProp extends NotificationProp {
+    dataDorayakis: Array<Dorayaki>
+    syncDataDorayakis: () => Promise<void>
+}

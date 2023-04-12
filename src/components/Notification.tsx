@@ -1,9 +1,9 @@
 import { Snackbar, SnackbarCloseReason } from '@material-ui/core';
+import { makeStyles } from '@material-ui/core/styles';
+import MuiAlert, { AlertProps } from '@material-ui/lab/Alert';
 import React from 'react';
 import { NotificationProp } from '../types/NotificationProp';
 import { NotificationState } from '../types/NotificationState';
-import MuiAlert, { AlertProps } from '@material-ui/lab/Alert';
-import { makeStyles } from '@material-ui/core/styles';
 
 
 function Alert(props: AlertProps) {

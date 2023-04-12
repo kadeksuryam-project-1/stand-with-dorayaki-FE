@@ -1,30 +1,32 @@
-import {useEffect, useState} from 'react';
-import { makeStyles } from '@material-ui/core/styles';
+import * as React from 'react'
+import Button from '@material-ui/core/Button';
 import Card from '@material-ui/core/Card';
-import clsx from 'clsx';
 import CardActionArea from '@material-ui/core/CardActionArea';
 import CardActions from '@material-ui/core/CardActions';
 import CardContent from '@material-ui/core/CardContent';
 import CardMedia from '@material-ui/core/CardMedia';
 import CircularProgress from '@material-ui/core/CircularProgress';
 import Collapse from '@material-ui/core/Collapse';
-import Button from '@material-ui/core/Button';
-import IconButton from '@material-ui/core/IconButton';
-import Typography from '@material-ui/core/Typography';
-import TextField from '@material-ui/core/TextField';
 import Dialog from '@material-ui/core/Dialog';
 import DialogActions from '@material-ui/core/DialogActions';
 import DialogContent from '@material-ui/core/DialogContent';
 import DialogContentText from '@material-ui/core/DialogContentText';
 import DialogTitle from '@material-ui/core/DialogTitle';
+import IconButton from '@material-ui/core/IconButton';
+import { makeStyles } from '@material-ui/core/styles';
+import TextField from '@material-ui/core/TextField';
+import Typography from '@material-ui/core/Typography';
+import DeleteIcon from '@material-ui/icons/Delete';
 import EditIcon from '@material-ui/icons/Edit';
 import ExpandMoreIcon from '@material-ui/icons/ExpandMore';
-import DeleteIcon from '@material-ui/icons/Delete';
-import Autocomplete from '@material-ui/lab/Autocomplete';
-import { getProvinsi, getKabupaten, getKecamatan } from '../utils/fetchDataDaerah'
-import { API_BASE_URL } from '../utils/config'
-import axios from 'axios'
-import { StoreEditDialogField, StoreProp } from '../types/Store';
+import Autocomplete, { AutocompleteChangeReason } from '@material-ui/lab/Autocomplete';
+import axios from 'axios';
+import clsx from 'clsx';
+import { useEffect, useState } from 'react';
+import { API_BASE_URL } from '../config/config';
+import { DataDaerahState, Store, StoreEditDialogField, StoreProp } from '../types/Store';
+import { getKabupaten, getKecamatan, getProvinsi } from '../utils/fetchDataDaerah';
+import { SuccessResWithData } from '../types/SuccessResWithData';
 
 const useStyles = makeStyles((theme) => ({
   root: {
@@ -48,114 +50,162 @@ const useStyles = makeStyles((theme) => ({
 
 const EditDialog = (prop: StoreProp) => {
     const [open, setOpen] = useState<boolean>(false)
-    const [dataDaerah, setDataDaerah] = useState({"provinsi" : [], "kabupaten" : [], "kecamatan" : []})
-    const [editField, setEditField] = useState<StoreEditDialogField>({...prop.dataStore, imageBlob: null})
+    const [dataDaerah, setDataDaerah] = useState<DataDaerahState>({provinces: [], districts: [], subdistricts: []})
+    const [editField, setEditField] = 
+        useState<StoreEditDialogField>({
+            ...prop.dataStore, 
+            imageBlob: null, 
+            editProvince: {id: 0, name: ""}, 
+            editDistrict: {id: 0, name: ""}, 
+            editSubdistrict: {id: 0, name: ""}}
+        )
+
     const [updateOps, setUpdateOps] = useState<boolean>(false)
 
     useEffect(() => {
+        let isMounted = true;
         const getAllDataBeg = async () => {
             try{
-                const resProvinsi = await getProvinsi()
-                const provId = 
-                    resProvinsi.filter(prov => (prov.nama) === (dataToko.provinsi))[0].id
-                const resKabupaten = await getKabupaten(provId)
-                const kabId = 
-                    resKabupaten.filter(kab => (kab.nama) === (dataToko.kabupaten))[0].id
-                const resKecamatan = await getKecamatan(kabId)
-                setDataDaerah({...dataDaerah, "provinsi": resProvinsi, "kabupaten": resKabupaten, "kecamatan" : resKecamatan})
-                setEditField({...dataToko, provinsi: dataToko.provinsi, 
-                    kabupaten: dataToko.kabupaten, kecamatan: dataToko.kecamatan})
+                if (isMounted) {
+                    const resProvinsi = await getProvinsi()
+                    const matchProv = 
+                        resProvinsi.filter(prov => (prov.nama) === (prop.dataStore.province))[0]
+                    const provId = matchProv.id
+
+                    const resKabupaten = await getKabupaten(provId)
+                    const matchKabupaten = 
+                        resKabupaten.filter(kab => (kab.nama) === (prop.dataStore.district))[0]
+                    const kabId = matchKabupaten.id
+                    const resKecamatan = await getKecamatan(kabId)
+                    const matchKecamatan = 
+                        resKecamatan.filter(kec => (kec.nama) === (prop.dataStore.subdistrict))[0]
+                    
+                    const newDaerahState: DataDaerahState =  {
+                        provinces: resProvinsi.map(provinsi => ({id: provinsi.id,  name: provinsi.nama})),
+                        districts: resKabupaten.map(kabupaten => ({id: kabupaten.id,  name: kabupaten.nama})),
+                        subdistricts: resKecamatan.map(kecamatan => ({id: kecamatan.id,  name: kecamatan.nama}))
+                    }
+                    setDataDaerah({...dataDaerah, provinces: newDaerahState.provinces, districts: newDaerahState.districts, 
+                        subdistricts: newDaerahState.subdistricts})
+                    setEditField({
+                        ...editField, 
+                        editProvince: {id: matchProv.id, name: matchProv.nama}, 
+                        editDistrict: {id: matchKabupaten.id, name: matchKabupaten.nama}, 
+                        editSubdistrict: {id: matchKecamatan.id, name: matchKecamatan.nama}
+                    })
+                }
             } catch(err){
-                let errMsg = err.message.toString()
-                if(err.response)
-                    if(err.response.data.error)
-                         errMsg = err.response.data.error
-                setNotif({...notif, open: true, type: "error", msg: errMsg})
+                let errMsg: string = "Error fetching daerah"
+                if(err instanceof Error) {
+                    let errMsg: string = err.message.toString();
+                    throw new Error(errMsg)
+                }
+                prop.setNotif({...prop.notif, isOpen: true, type: "error", msg: errMsg})
             }
 
         } 
-        getAllDataBeg()
+        if(open) {
+            getAllDataBeg();
+        }
+
+        return () => {
+            isMounted = false;
+        };
     },[open])
 
     const handleClickOpen = () => {
       setOpen(true)
     }
-  
+
     const handleClose = () => {
       setOpen(false)
     }
 
-    const handleOnProvinsiChange = async (event, val, reason) => {
+    const handleOnProvinsiChange = async (event: React.ChangeEvent<{}>, val: {id: number, name: string} | null, reason: AutocompleteChangeReason) => {
         if(reason === "clear"){
-            setEditField({...editField, provinsi: "", kabupaten: "", kecamatan: ""})
+            setEditField({...editField,  province: "", district: "", subdistrict: "",
+            editProvince: {id: 0, name: ""}, 
+            editDistrict: {id: 0, name: ""}, 
+            editSubdistrict: {id: 0, name: ""}
+        })
         }
         else if(val){
             try{
-                const res = await getKabupaten(val.id)
-                setEditField({...editField, provinsi: val.nama, kabupaten : "", kecamatan : ""})
-                setDataDaerah({...dataDaerah, "kabupaten": res})
+                const districts = (await getKabupaten(val.id)).map(district => ({id: district.id, name: district.nama}))
+                setEditField({...editField, editProvince: val, province: val.name, district : "", subdistrict : "",
+                    editDistrict: {id: 0, name: ""}, 
+                    editSubdistrict: {id: 0, name: ""}
+                })
+                setDataDaerah({...dataDaerah, districts})
             }catch(err){
-                let errMsg = err.message.toString()
-                if(err.response)
-                    if(err.response.data.error)
-                         errMsg = err.response.data.error
-                setNotif({...notif, open: true, type: "error", msg: errMsg})
+                let errMsg: string = "Error handleOnProvinsiChange"
+                if(err instanceof Error) {
+                    let errMsg: string = err.message.toString();
+                    throw new Error(errMsg)
+                }
+                prop.setNotif({...prop.notif, isOpen: true, type: "error", msg: errMsg})
             }
         }
     }
 
-    const handleOnKabupatenChange = async (event, val, reason) => {
+    const handleOnKabupatenChange =  async (event: React.ChangeEvent<{}>, val: {id: number, name: string} | null, reason: AutocompleteChangeReason) => {
         if(reason === "clear"){
-            setEditField({...editField, kabupaten: "", kecamatan: ""})
+            setEditField({...editField, province: "", district: "", subdistrict: "",
+            editDistrict: {id: 0, name: ""}, 
+            editSubdistrict: {id: 0, name: ""}
+        })
         }
         else if(val){
             try{
-                const res = await getKecamatan(val.id)
-                setEditField({...editField, kabupaten : val.nama, kecamatan : ""})
-                setDataDaerah({...dataDaerah, "kecamatan": res})
+                const subdistricts = (await getKecamatan(val.id)).map(subdistrict => ({id: subdistrict.id, name: subdistrict.nama}))
+                setEditField({...editField, editDistrict: val, district : val.name, subdistrict : "", editSubdistrict: {id: 0, name: ""}})
+                setDataDaerah({...dataDaerah, subdistricts})
             }catch(err){
-                let errMsg = err.message.toString()
-                if(err.response)
-                    if(err.response.data.error)
-                         errMsg = err.response.data.error
-                setNotif({...notif, open: true, type: "error", msg: errMsg})
+                let errMsg: string = "Error handleOnKabupatenChange"
+                if(err instanceof Error) {
+                    let errMsg: string = err.message.toString();
+                    throw new Error(errMsg)
+                }
+                prop.setNotif({...prop.notif, isOpen: true, type: "error", msg: errMsg})
             }
         }
     }
 
-    const handleOnKecamatanChange = (event, val, reason) => {
+    const handleOnKecamatanChange = async (event: React.ChangeEvent<{}>, val: {id: number, name: string} | null, reason: AutocompleteChangeReason) => {
         if(reason === "clear"){
-            setEditField({...editField, kecamatan: ""})
+            setEditField({...editField, subdistrict: "",
+            editSubdistrict: {id: 0, name: ""}
+        })
         }
         else if(val){
-            setEditField({...editField, kecamatan: val.nama})
+            setEditField({...editField, editSubdistrict: val, subdistrict: val.name})
         }
     }
 
     const handleEdit = async () => {
         setUpdateOps(true)
         try{
-            const updateURL = API_BASE_URL + `/toko-dorayakis/${dataToko._id}`
-            const {nama, jalan, kabupaten, kecamatan, provinsi, pngFile} = editField
+            const updateURL = API_BASE_URL + `/v1/stores/${prop.dataStore.id}`
+            const {name, street, district, subdistrict, province, imageBlob} = editField
 
             let formData = new FormData()
-            if(nama) formData.append("nama", nama)
-            if(jalan) formData.append("jalan", jalan)
-            if(kabupaten) formData.append("kabupaten", kabupaten)
-            if(kecamatan) formData.append("kecamatan", kecamatan)
-            if(provinsi) formData.append("provinsi", provinsi)
-            if(pngFile) formData.append("gambar", pngFile)
+            if(name) formData.append("name", name)
+            if(street) formData.append("street", street)
+            if(district) formData.append("district", district)
+            if(subdistrict) formData.append("subdistrict", subdistrict)
+            if(province) formData.append("province", province)
+            if(imageBlob) formData.append("image", imageBlob)
 
-            await axios.put(updateURL, formData )
-            await syncDataTokos()
-            setNotif({...notif, open: true, type: "success", msg: "toko berhasil diupdate"})
-            setOpen(false)
-        }catch(err){
-            let errMsg = err.message.toString()
-            if(err.response)
-                if(err.response.data.error)
-                     errMsg = err.response.data.error
-            setNotif({...notif, open: true, type: "error", msg: errMsg})
+            await axios.put(updateURL, formData);
+            await prop.syncDataStores()
+            prop.setNotif({...prop.notif, isOpen: true, type: "success", msg: "toko berhasil diupdate"})
+            handleClose()
+        } catch(err){
+            let errMsg: string = "Error handleEdit"
+            if(err instanceof Error) {
+                errMsg = err.message.toString();
+            }
+            prop.setNotif({...prop.notif, isOpen: true, type: "error", msg: errMsg})
         }
         finally{
             setUpdateOps(false)
@@ -163,13 +213,12 @@ const EditDialog = (prop: StoreProp) => {
     }
 
     const checkEditFieldChanged = () => {
-        return !(
-            dataToko.nama === editField.nama &&
-            dataToko.provinsi === editField.provinsi &&
-            dataToko.kabupaten === editField.kabupaten &&
-            dataToko.kecamatan === editField.kecamatan &&
-            dataToko.jalan === editField.jalan &&
-            !(editField.pngFile)
+        return (
+            editField.name !== "" &&
+            editField.province !== "" &&
+            editField.district !== "" &&
+            editField.subdistrict !== "" &&
+            editField.street !== ""
         )
     }
 
@@ -187,43 +236,43 @@ const EditDialog = (prop: StoreProp) => {
             </DialogContentText>
             <form></form>
             <TextField autoFocus 
-                value={editField.nama}
+                value={editField.name}
                 style={{ maxWidth: 400 }} margin="dense" label="Nama" type="text" 
                 fullWidth  variant="outlined"
-                onChange={(e) => setEditField({...editField, "nama" : e.target.value})}
+                onChange={(e) => setEditField({...editField, name : e.target.value})}
             />
             <Autocomplete
-                value={{nama: editField.provinsi}}
-                options={dataDaerah["provinsi"]}
-                getOptionSelected={(option, value) => value.nama ? (option.nama === value.nama) : true}
-                getOptionLabel={(option) => option.nama ? option.nama : ''}
+                value={{id: editField.editProvince.id, name: editField.editProvince.name}}
+                options={dataDaerah.provinces}
+                getOptionSelected={(option, value) => value.name ? (option.name === value.name) : true}
+                getOptionLabel={(option) => option.name ? option.name : ''}
                 style={{ maxWidth: 400 }}
                 onChange={handleOnProvinsiChange}
                 renderInput={(params) => <TextField {...params}  margin="dense" fullWidth label="Provinsi" variant="outlined" />}
             />
             <Autocomplete
-                value={{nama: editField.kabupaten}}
-                options={dataDaerah["kabupaten"]}
-                getOptionSelected={(option, value) => value.nama ? (option.nama === value.nama) : true}
-                getOptionLabel={(option) => option.nama ? option.nama : ''}
+                value={{id: editField.editDistrict.id, name: editField.editDistrict.name}}
+                options={dataDaerah.districts}
+                getOptionSelected={(option, value) => value.name ? (option.name === value.name) : true}
+                getOptionLabel={(option) => option.name ? option.name : ''}
                 style={{ maxWidth: 400 }}
                 onChange={handleOnKabupatenChange}
                 renderInput={(params) => <TextField {...params}  margin="dense" fullWidth label="Kabupaten" variant="outlined" />}
             />
             <Autocomplete
-                value={{nama: editField.kecamatan}}
-                options={dataDaerah["kecamatan"]}
-                getOptionSelected={(option, value) => value.nama ? (option.nama === value.nama) : true}
-                getOptionLabel={(option) => option.nama ? option.nama : ''}
+                value={{id: editField.editSubdistrict.id, name: editField.editSubdistrict.name}}
+                options={dataDaerah.subdistricts}
+                getOptionSelected={(option, value) => value.name ? (option.name === value.name) : true}
+                getOptionLabel={(option) => option.name ? option.name : ''}
                 style={{ maxWidth: 400 }}
                 onChange={handleOnKecamatanChange}
                 renderInput={(params) => <TextField {...params} margin="dense" fullWidth label="Kecamatan" variant="outlined" />}
             />
             <TextField  
-                value={editField.jalan}
+                value={editField.street}
                 style={{ maxWidth: 400 }} margin="dense" label="Jalan" type="text" 
                 fullWidth  variant="outlined"
-                onChange={(e) => setEditField({...editField, "jalan" : e.target.value})}
+                onChange={(e) => setEditField({...editField, street : e.target.value})}
             />
             <div>
                 Gambar
@@ -231,7 +280,7 @@ const EditDialog = (prop: StoreProp) => {
                     <input
                         accept="image/png"
                         type="file"
-                        onChange={(e) => setEditField({...editField, pngFile: e.target.files[0]})}
+                        onChange={(e) => setEditField({...editField, imageBlob: e.target.files?.item(0) || null})}
                     />
                 </div>
             </div>
@@ -263,7 +312,7 @@ const EditDialog = (prop: StoreProp) => {
     )
 }
 
-const DeleteDialog = ({dataToko, syncDataTokos, notif, setNotif}) => {
+const DeleteDialog = (prop: StoreProp) => {
     const [open, setOpen] = useState(false)
     const [deleteOps, setDeleteOps] = useState(false)
 
@@ -279,17 +328,19 @@ const DeleteDialog = ({dataToko, syncDataTokos, notif, setNotif}) => {
     const handleDelete = async () => {
         setDeleteOps(true)
         try{
-            const deleteURL = API_BASE_URL + `/toko-dorayakis/${dataToko._id}`
+            const deleteURL = API_BASE_URL + `/v1/stores/${prop.dataStore.id}`
             await axios.delete(deleteURL)
-            setNotif({...notif, open: true, type: "success", msg: "toko berhasil dihapus"})
+            prop.setNotif({...prop.notif, isOpen: true, type: "success", msg: "toko berhasil dihapus"})
             setOpen(false)
-            await syncDataTokos()
+            await prop.syncDataStores()
         }catch(err){
-            let errMsg = err.message.toString()
-            if(err.response)
-                if(err.response.data.error)
-                     errMsg = err.response.data.error
-            setNotif({...notif, open: true, type: "error", msg: errMsg})
+            let errMsg: string = "Error handleDelete"
+            if(err instanceof Error) {
+               errMsg = err.message.toString();
+            }
+            prop.setNotif({...prop.notif, isOpen: true, type: "error", msg: errMsg})
+        } finally {
+            setDeleteOps(false)
         }
     }
     return (
@@ -304,7 +355,7 @@ const DeleteDialog = ({dataToko, syncDataTokos, notif, setNotif}) => {
                 aria-labelledby="alert-dialog-title"
                 aria-describedby="alert-dialog-description"
             >
-                <DialogTitle id="alert-dialog-title">{`Delete Toko ${dataToko.nama}?`}</DialogTitle>
+                <DialogTitle id="alert-dialog-title">{`Delete Toko ${prop.dataStore.name}?`}</DialogTitle>
                 <DialogContent>
                     <DialogContentText id="alert-dialog-description">
                         Penghapusan toko akan berdampak dihapusnya semua stok dorayaki toko tersebut.
@@ -331,7 +382,7 @@ const DeleteDialog = ({dataToko, syncDataTokos, notif, setNotif}) => {
     )
 }
 
-const Toko = ({dataToko, syncDataTokos, notif, setNotif, changeRoute}) => {
+const Store = (prop: StoreProp) => {
     const classes = useStyles()
 
     const [showDetails, setShowDetails] = useState(false)
@@ -339,7 +390,9 @@ const Toko = ({dataToko, syncDataTokos, notif, setNotif, changeRoute}) => {
     const handleShowDetails = () => setShowDetails(!showDetails)
 
     const handleTokoStok = () => {
-        changeRoute(`/toko-dorayaki/stok/${dataToko._id}`)
+        if(prop.changeRoute) {
+            prop.changeRoute(`/stock/${prop.dataStore.id}`)
+        }
     }
 
     return(
@@ -347,20 +400,18 @@ const Toko = ({dataToko, syncDataTokos, notif, setNotif, changeRoute}) => {
             <CardActionArea onClick={handleTokoStok} style={{height: "33vh"}}>
                 <CardMedia
                     className={classes.media}
-                    image={API_BASE_URL + dataToko.gambar}
-                    title={dataToko.nama}
+                    image={prop.dataStore.image}
+                    title={prop.dataStore.name}
                 />
                 <CardContent>
                     <Typography gutterBottom variant="h6" component="h2">
-                        {dataToko.nama}
+                        {prop.dataStore.name}
                     </Typography>
                 </CardContent>
             </CardActionArea>
             <CardActions style={{display: "flex", justifyContent: "space-between"}}>
-                <EditDialog dataToko={dataToko}  syncDataTokos={syncDataTokos}
-                    notif={notif} setNotif={setNotif}/>
-                <DeleteDialog dataToko={dataToko} syncDataTokos={syncDataTokos}
-                    notif={notif} setNotif={setNotif}/>
+                <EditDialog {...prop}/>
+                <DeleteDialog {...prop}/>
                 <IconButton
                     className={clsx(classes.expand, {
                         [classes.expandOpen]: showDetails,
@@ -376,15 +427,14 @@ const Toko = ({dataToko, syncDataTokos, notif, setNotif, changeRoute}) => {
                 <CardContent>
                     <Typography><strong>Alamat Toko</strong></Typography>
                     <br/>
-                    <Typography><strong>Jalan: </strong> {dataToko.jalan}</Typography>
-                    <Typography><strong>Kecamatan: </strong>{dataToko.kecamatan}</Typography>
-                    <Typography><strong>Kabupaten: </strong> {dataToko.kabupaten}</Typography>
-                    <Typography><strong>Provinsi: </strong> {dataToko.provinsi}</Typography>
+                    <Typography><strong>Jalan: </strong> {prop.dataStore.street}</Typography>
+                    <Typography><strong>Kecamatan: </strong>{prop.dataStore.subdistrict}</Typography>
+                    <Typography><strong>Kabupaten: </strong> {prop.dataStore.district}</Typography>
+                    <Typography><strong>Province: </strong> {prop.dataStore.province}</Typography>
                 </CardContent>
             </Collapse>
         </Card>
     )
 }
 
-export default Toko
-
+export default Store

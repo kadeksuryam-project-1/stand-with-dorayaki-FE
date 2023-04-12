@@ -1,6 +1,7 @@
+import { Color } from "@material-ui/lab";
+
 export interface NotificationState {
     isOpen: boolean,
-    type: AlertColor,
-    msg: string,
-    theme: Theme
+    type: Color,
+    msg: string
 }
