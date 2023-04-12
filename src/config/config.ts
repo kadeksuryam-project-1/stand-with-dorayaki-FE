@@ -1,4 +1,4 @@
 
-const API_BASE_URL: string = "http://localhost:8080/api"
+const API_BASE_URL: string =  process?.env.REACT_APP_API_BASE_URL || ""
 
 export { API_BASE_URL }
