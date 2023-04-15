@@ -67,7 +67,7 @@ const EditDialog = (prop: DorayakiProp) => {
             if(description) formData.append("description", description)
             if(imageBlob) formData.append("image", imageBlob)
             
-            await axios.put(updateURL, formData)
+            await axios.put(updateURL, formData, { withCredentials: true })
             await prop.syncDataDorayakis()
 
             prop.setNotif({...prop.notif, isOpen: true, type: "success", msg: "dorayaki successfully updated"})
@@ -176,7 +176,7 @@ const DeleteDialog = (prop: DorayakiProp) => {
         
         try{
             const deleteURL = API_BASE_URL + `/v1/dorayakis/${prop.dataDorayaki.id}`
-            await axios.delete(deleteURL)
+            await axios.delete(deleteURL, { withCredentials: true })
             handleClose()
             prop.setNotif({...prop.notif, isOpen: true, type: "success", msg: "dorayaki berhasil dihapus"})
             setTimeout(async () => {

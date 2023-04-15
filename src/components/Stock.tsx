@@ -80,7 +80,7 @@ const MoveDorayakiDialog = (prop: StockProp) => {
     const [chosenDorayakiStocks, setChosenDorayakiStocks] = useState<Array<Stock>>([])
     
     const handleClickOpen = async () => {
-      let stocks = (await axios.get<SuccessResWithData<Array<Stock>>>(API_BASE_URL + `/v1/stocks?op=basic&dorayaki_id=${prop.dataStock.Dorayaki.id}`)).data.data
+      let stocks = (await axios.get<SuccessResWithData<Array<Stock>>>(API_BASE_URL + `/v1/stocks?op=basic&dorayaki_id=${prop.dataStock.Dorayaki.id}`, { withCredentials: true })).data.data
       stocks = stocks.filter(stock => (stock.Store.id !== currStore.id))
       setChosenDorayakiStocks(stocks)
       setOpen(true);
@@ -98,7 +98,7 @@ const MoveDorayakiDialog = (prop: StockProp) => {
         try{
             const srcStock = prop.dataStock
             const amount = moveField
-            await axios.patch(API_BASE_URL + `/v1/stocks/${srcStock.id}?op=tf&tf_dest_id=${destStock.id}&tf_amount=${amount}`)
+            await axios.patch(API_BASE_URL + `/v1/stocks/${srcStock.id}?op=tf&tf_dest_id=${destStock.id}&tf_amount=${amount}`, { withCredentials: true })
             prop.setNotif({...prop.notif, isOpen: true, type: "success", msg: "stok dorayaki berhasil di pindahkan"})
             await handleClose()
         } catch(err){
@@ -221,7 +221,7 @@ const Stock = (prop: StockProp) => {
             try{
                 setEditOps(true)
                 const stokEditURL = API_BASE_URL + `/v1/stocks/${prop.dataStock.id}?op=basic` 
-                await axios.patch(stokEditURL, {stock: parseInt(stokFieldVal) || 0})
+                await axios.patch(stokEditURL, {stock: parseInt(stokFieldVal) || 0}, { withCredentials: true })
                 setEditOps(false)
                 setStokField(false)
                 prop.setNotif({...prop.notif, isOpen: true, type: "success", msg: "stok dorayaki berhasil diupdate"})

@@ -24,7 +24,7 @@ const StockPage = (prop: StockPageProp) => {
         const getStok = async () => {
             try{
                 const stokURL = API_BASE_URL + `/v1/stocks?store_id=${id}`
-                const newTokoStoks = (await axios.get<SuccessResWithData<Array<StockType>>>(stokURL)).data.data
+                const newTokoStoks = (await axios.get<SuccessResWithData<Array<StockType>>>(stokURL, { withCredentials: true })).data.data
 
                 setStocks(newTokoStoks)
             } catch(err){
@@ -41,7 +41,7 @@ const StockPage = (prop: StockPageProp) => {
     const syncDataStocks = async () => {
         try{
             const stokURL = API_BASE_URL + `/v1/stocks?store_id=${id}`
-            const newTokoStoks = (await axios.get<SuccessResWithData<Array<StockType>>>(stokURL)).data.data
+            const newTokoStoks = (await axios.get<SuccessResWithData<Array<StockType>>>(stokURL, { withCredentials: true })).data.data
 
             setStocks(newTokoStoks)
         } catch(err){

@@ -56,7 +56,7 @@ const AddDialog = (prop: DorayakiPageAddDialogProp) => {
             if(description) formData.append("description", description)
             if(imageBlob) formData.append("image", imageBlob)
 
-            await axios.post(addURL, formData)
+            await axios.post(addURL, formData, { withCredentials: true })
             await prop.syncDataDorayakis()
             prop.setNotif({...prop.notif, isOpen: true, type: "success", msg: "dorayaki berhasil ditambahkan!"})
             handleClose()

@@ -180,7 +180,7 @@ const AddDialog = (prop: StorePageAddDialogProp) => {
             if(province) formData.append("province", province)
             if(imageBlob) formData.append("image", imageBlob)
 
-            await axios.post(addURL, formData)
+            await axios.post(addURL, formData, { withCredentials: true })
             await prop.syncDataStores()
             prop.setNotif({...prop.notif, isOpen: true, type: "success", msg: "toko berhasil ditambahkan!"})
             handleClose()

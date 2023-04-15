@@ -1,4 +1,4 @@
 
-const API_BASE_URL: string =  "https://k8s.surya.ngrok.app"
+const API_BASE_URL: string =  `${import.meta.env.VITE_APP_API_BASE_URL}/api`
 
 export { API_BASE_URL }

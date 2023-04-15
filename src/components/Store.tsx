@@ -196,7 +196,7 @@ const EditDialog = (prop: StoreProp) => {
             if(province) formData.append("province", province)
             if(imageBlob) formData.append("image", imageBlob)
 
-            await axios.put(updateURL, formData);
+            await axios.put(updateURL, formData, { withCredentials: true });
             await prop.syncDataStores()
             prop.setNotif({...prop.notif, isOpen: true, type: "success", msg: "toko berhasil diupdate"})
             handleClose()
@@ -329,7 +329,7 @@ const DeleteDialog = (prop: StoreProp) => {
         setDeleteOps(true)
         try{
             const deleteURL = API_BASE_URL + `/v1/stores/${prop.dataStore.id}`
-            await axios.delete(deleteURL)
+            await axios.delete(deleteURL, { withCredentials: true })
             prop.setNotif({...prop.notif, isOpen: true, type: "success", msg: "toko berhasil dihapus"})
             setOpen(false)
             await prop.syncDataStores()
