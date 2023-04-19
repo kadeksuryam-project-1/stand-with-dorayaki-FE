@@ -1,0 +1,56 @@
+name: Tag-Build-Publish-Deploy
+
+on:
+  pull_request:
+    types: [closed]
+  workflow_dispatch:
+      
+jobs:
+  tag:
+    runs-on: ubuntu-latest
+
+    if: github.event.pull_request.merged
+    
+    outputs:
+      tag: ${{ steps.semver.outputs.tag }}
+      
+    steps:
+      - name: Semver Tag
+        id: semver
+        uses: K-Phoen/semver-release-action@master
+        with:
+          release_branch: master
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          
+      - uses: stefanzweifel/git-auto-commit-action@v4
+        with:
+          commit_message: Release ${{ steps.semver.outputs.tag }}
+          branch: master
+          
+  build-publish:
+    needs: tag
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+      - name: Login to Docker Hub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+      - name: Build
+        uses: docker/build-push-action@v4
+        with:
+          context: .
+          push: true
+          tags: kadeksuryam/stand-with-dorayaki-fe:${{ needs.tag.outputs.tag }}
+      - name: Repository Dispatch
+        uses: peter-evans/repository-dispatch@v1
+        with:
+          token: ${{ secrets.PAT }}
+          repository: kadeksuryam-project-1/infrastructure
+          event-type: new-image
+          client-payload: '{"image": "kadeksuryam/stand-with-dorayaki-fe:${{ needs.tag.outputs.tag }}", "srcRepo": "stand-with-dorayaki-fe"}'
