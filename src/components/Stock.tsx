@@ -98,7 +98,7 @@ const MoveDorayakiDialog = (prop: StockProp) => {
         try{
             const srcStock = prop.dataStock
             const amount = moveField
-            await axios.patch(API_BASE_URL + `/v1/stocks/${srcStock.id}?op=tf&tf_dest_id=${destStock.id}&tf_amount=${amount}`, { withCredentials: true })
+            await axios.patch(API_BASE_URL + `/v1/stocks/${srcStock.id}?op=tf&tf_dest_id=${destStock.id}&tf_amount=${amount}`,null, { withCredentials: true })
             prop.setNotif({...prop.notif, isOpen: true, type: "success", msg: "stok dorayaki berhasil di pindahkan"})
             await handleClose()
         } catch(err){
