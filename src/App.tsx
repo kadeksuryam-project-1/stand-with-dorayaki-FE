@@ -20,6 +20,7 @@ import { Store } from './types/Store';
 import { SuccessResWithData } from './types/SuccessResWithData';
 import LoginPage from './pages/LoginPage';
 import { useCookies } from 'react-cookie';
+import Footer from './components/Footer';
 
 interface PrivateRouteProps extends RouteProps {
   component: React.ComponentType<any>;
@@ -116,7 +117,7 @@ function App() {
       <Notification notif={notif} setNotif={setNotif} />
       <ThemeProvider theme={darkTheme}>
         <Navbarc darkState={darkState} handleThemeChange={handleThemeChange}/>
-        <Paper style={{height: "auto"}}>
+        <Paper style={{minHeight: "87.8vh"}}>
           <Switch>
             <Route path="/login">
               <LoginPage />
@@ -157,6 +158,7 @@ function App() {
             </Route>
           </Switch>
         </Paper>
+        <Footer />
       </ThemeProvider>
     </BrowserRouter>
   );
