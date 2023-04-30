@@ -5,15 +5,19 @@ import Brightness7Icon from '@material-ui/icons/Brightness7';
 import { Link, useHistory } from 'react-router-dom';
 import { NavbarcProp } from '../types/NavbarcProp';
 import { useCookies } from 'react-cookie';
+import axios from 'axios';
+import { API_BASE_URL } from '../config/config';
 
 
 const Navbarc = (prop: NavbarcProp) => {
-    const [cookie, , removeCookie] = useCookies(['logged_in']);
+    const [cookie, , removeCookie] = useCookies();
     const history = useHistory();
   
-    const handleLogout = () => {
-      removeCookie('logged_in');
-      history.push('/login');
+    const handleLogout = async () => {
+      await axios.get(API_BASE_URL + `/clear-cookies`, { withCredentials: true })
+      Object.keys(cookie).forEach((key) => {
+        removeCookie(key, { path: '/' });
+      });
     };
 
     return(

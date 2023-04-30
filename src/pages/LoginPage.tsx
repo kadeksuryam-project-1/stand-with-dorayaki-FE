@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { Box, Container, Typography, Link as MuiLink } from '@material-ui/core';
+import { Box, Container, Typography, Link as MuiLink, Grid } from '@material-ui/core';
 import { makeStyles } from '@material-ui/core/styles';
 import { useHistory, useLocation } from 'react-router-dom';
 import googleLogo from '../assets/google.svg';
@@ -11,7 +11,7 @@ const useStyles = makeStyles((theme) => ({
     display: 'flex',
     justifyContent: 'center',
     alignItems: 'center',
-    height: '90vh',
+    minHeight: '87.8vh',
     backgroundColor: '#2363eb',
   },
   typography: {
@@ -68,20 +68,22 @@ const LoginPage = () => {
   }, [cookie.logged_in, history]);
 
   return (
-    <Container maxWidth={false} className={classes.container}>
-      <Box width="27rem">
-      <Typography variant="h3" component="p" className={classes.typography}><strong>WELCOME TO STAND WITH DORAYAKI APP</strong></Typography>
-        <Box width="100%" className={classes.box}>
-          <Typography variant="h6" component="p" className={classes.typography2}>
-            <strong>Login with:</strong>
-          </Typography>
-          <MuiLink href={getGoogleUrl(from)} className={classes.link}>
-            <img src={googleLogo} alt="Google Logo" className={classes.logo} />
-            Google
-          </MuiLink>
+    <Grid>
+      <Container maxWidth={false} className={classes.container}>
+        <Box width="27rem">
+        <Typography variant="h4" component="p" className={classes.typography}><strong>STAND WITH DORAYAKI にようこそ!</strong></Typography>
+          <Box width="100%" className={classes.box}>
+            <Typography variant="h6" component="p" className={classes.typography2}>
+              <strong>Login with</strong>
+            </Typography>
+            <MuiLink href={getGoogleUrl(from)} className={classes.link}>
+              <img src={googleLogo} alt="Google Logo" className={classes.logo} />
+              Google
+            </MuiLink>
+          </Box>
         </Box>
-      </Box>
-    </Container>
+      </Container>
+    </Grid>
   );
 };
 
